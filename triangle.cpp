@@ -46,25 +46,6 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
-void pickPhysicalDevice() {
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-
-}
-
-std::vector<const char*> getRequiredExtensions() {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    if (enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
-}
-
 class HelloTriangleApplication {
 public:
     void run() {
@@ -78,6 +59,7 @@ private:
     GLFWwindow* window;
     VkInstance instance;
 
+    //creates Vulkan instance to run
     void createInstance() {
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -129,6 +111,7 @@ private:
         }
     }
 
+    //creates GLFW window
     void initWindow() {
         glfwInit();
 
@@ -138,17 +121,55 @@ private:
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     }
 
+
+    //creates Vulkan instance using createInstance(), picks graphics device to render to
     void initVulkan() {
         createInstance();
         pickPhysicalDevice();
     }
 
+    //checks if eligible graphics device is suitable to run application, called in pickPhysicalDevice(), takes thee first graphics device it finds
+    bool isDeviceSuitable(VkPhysicalDevice device) {
+        return true;
+    }
+
+    void pickPhysicalDevice() {
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
+        //checks for Vulkan support on GPU devices
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        //if no Vulkan support
+        if (deviceCount == 0) {
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        }
+
+        //has Vulkan support
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        //loop calling isDeviceSuitable()
+        for (const auto& device : devices) {
+            if (isDeviceSuitable(device)) {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE) {
+            throw std::runtime_error("failed to find a suitable GPU!");
+        }
+    }
+
+    //loop keeping window open
     void mainLoop() {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
         }
     }
 
+    //destroys all open instances of the API
     void cleanup() {
         vkDestroyInstance(instance, nullptr);
 
@@ -158,6 +179,7 @@ private:
     }
 };
 
+//main Runner code
 int main() {
     HelloTriangleApplication app;
 
